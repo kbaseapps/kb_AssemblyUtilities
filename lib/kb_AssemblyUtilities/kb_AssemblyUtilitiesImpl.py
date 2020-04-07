@@ -1,14 +1,23 @@
 # -*- coding: utf-8 -*-
 #BEGIN_HEADER
+from __future__ import print_function
+from __future__ import division
+
 import logging
 import os
+import sys
+import shutil
+import hashlib
+import subprocess
+import requests
 import re
-
-from kb_AssemblyUtilities.kb_AssemblyUtilitiesImpl import kb_AssemblyUtilities
-from kb_AssemblyUtilities.kb_AssemblyUtilitiesServer import MethodContext
-from kb_AssemblyUtilities.authclient import KBaseAuth as _KBaseAuth
+import traceback
+import uuid
+from datetime import datetime
+from pprint import pprint, pformat
 
 from installed_clients.WorkspaceClient import Workspace
+from installed_clients.DataFileUtilClient import DataFileUtil
 from installed_clients.AssemblyUtilClient import AssemblyUtil
 from installed_clients.GenomeFileUtilClient import GenomeFileUtil
 from installed_clients.MetagenomeUtilsClient import MetagenomeUtils
@@ -33,20 +42,46 @@ class kb_AssemblyUtilities:
     # the latter method is running.
     ######################################### noqa
     VERSION = "1.0.0"
-    GIT_URL = "https://github.com/kbaseapps/kb_AssemblyUtilities"
-    GIT_COMMIT_HASH = "24be0d5da2a4d343f44ad3610841ce67eb9687f0"
+    GIT_URL = "https://github.com/dcchivian/kb_AssemblyUtilities"
+    GIT_COMMIT_HASH = "23e4960c7eb8b5760df434575ef1eb0a36b4118a"
 
     #BEGIN_CLASS_HEADER
+    workspaceURL     = None
+    shockURL         = None
+    handleURL        = None
+    serviceWizardURL = None
+    callbackURL      = None
+    scratch          = None
+
+    # log
+    def log(self, target, message):
+        timestamp = str(datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3])
+        if target is not None:
+            target.append('['+timestamp+'] '+message)
+        print('['+timestamp+'] '+message)
+        sys.stdout.flush()
+    
     #END_CLASS_HEADER
 
     # config contains contents of config file in a hash or None if it couldn't
     # be found
     def __init__(self, config):
         #BEGIN_CONSTRUCTOR
-        self.callback_url = os.environ['SDK_CALLBACK_URL']
         self.shared_folder = config['scratch']
         logging.basicConfig(format='%(created)s %(levelname)s: %(message)s',
                             level=logging.INFO)
+
+        self.workspaceURL = config['workspace-url']
+        self.shockURL = config['shock-url']
+        self.handleURL = config['handle-service-url']
+        self.serviceWizardURL = config['srv-wiz-url']
+        self.callbackURL = os.environ['SDK_CALLBACK_URL']
+        self.scratch = os.path.abspath(config['scratch'])
+
+        pprint(config)
+
+        if not os.path.exists(self.scratch):
+            os.makedirs(self.scratch)
         #END_CONSTRUCTOR
         pass
 
@@ -95,7 +130,7 @@ class kb_AssemblyUtilities:
         SERVICE_VER = 'release'
         # wsClient
         try:
-            wsClient = workspaceService(self.workspaceURL, token=token)
+            wsClient = Workspace(self.workspaceURL, token=token)
         except Exception as e:
             raise ValueError('Unable to instantiate wsClient with workspaceURL: '+ self.workspaceURL +' ERROR: ' + str(e))
         # setAPI_Client
@@ -111,7 +146,7 @@ class kb_AssemblyUtilities:
             raise ValueError('Unable to instantiate auClient with callbackURL: '+ self.callbackURL +' ERROR: ' + str(e))
         # dfuClient
         try:
-            dfuClient = DFUClient(self.callbackURL)
+            dfuClient = DataFileUtil(self.callbackURL)
         except Exception as e:
             raise ValueError('Unable to instantiate dfu_Client with callbackURL: '+ self.callbackURL +' ERROR: ' + str(e))
 
@@ -377,13 +412,14 @@ class kb_AssemblyUtilities:
             report_info = kbr.create_extended_report(
                 {'message': report_text,
                  'objects_created': objects_created,
-                 'direct_html_link_index': None,  # 0,
-                 'html_links': None,
-                 'file_links': None,
+                 'direct_html_link_index': 0,
+                 'html_links': [],
+                 'file_links': [],
                  'report_object_name': 'kb_filter_contigs_by_length_report_' + str(uuid.uuid4()),
                  'workspace_name': params['workspace_name']
                  })
-        except _RepError as re:
+        #except _RepError as re:
+        except Exception as re:
             # not really any way to test this, all inputs have been checked earlier and should be
             # ok 
             print('Logging exception from creating report object')

@@ -2,6 +2,10 @@
 import os
 import time
 import unittest
+import json
+import requests
+import shutil
+from pprint import pprint  # noqa: F401
 from configparser import ConfigParser
 
 from kb_AssemblyUtilities.kb_AssemblyUtilitiesImpl import kb_AssemblyUtilities
@@ -46,7 +50,7 @@ class kb_AssemblyUtilitiesTest(unittest.TestCase):
         cls.scratch = cls.cfg['scratch']
         cls.callback_url = os.environ['SDK_CALLBACK_URL']
         suffix = int(time.time() * 1000)
-        cls.wsName = "test_ContigFilter_" + str(suffix)
+        cls.wsName = "test_kb_AssemblyUtilities_" + str(suffix)
         ret = cls.wsClient.create_workspace({'workspace': cls.wsName})  # noqa
 
     @classmethod
@@ -55,7 +59,25 @@ class kb_AssemblyUtilitiesTest(unittest.TestCase):
             cls.wsClient.delete_workspace({'workspace': cls.wsName})
             print('Test workspace was deleted')
 
+    def getWsClient(self):
+        return self.__class__.wsClient
 
+    def getWsName(self):
+        if hasattr(self.__class__, 'wsName'):
+            return self.__class__.wsName
+        suffix = int(time.time() * 1000)
+        wsName = "test_kb_assembly_compare_" + str(suffix)
+        ret = self.getWsClient().create_workspace({'workspace': wsName})  # noqa
+        self.__class__.wsName = wsName
+        return wsName
+
+    def getImpl(self):
+        return self.__class__.serviceImpl
+            
+    def getContext(self):
+        return self.__class__.ctx
+
+            
     ##############
     # UNIT TESTS #
     ##############
