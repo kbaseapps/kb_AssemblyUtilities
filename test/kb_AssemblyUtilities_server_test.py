@@ -86,6 +86,7 @@ class kb_AssemblyUtilitiesTest(unittest.TestCase):
 
     #### test_filter_contigs_by_length_01()
     ##
+    @unittest.skip("skipped test_filter_contigs_by_length_01()")  # uncomment to skip
     def test_filter_contigs_by_length_01 (self):
         method = 'filter_contigs_by_length_01'
         
@@ -124,6 +125,120 @@ class kb_AssemblyUtilitiesTest(unittest.TestCase):
             'output_name': 'test_filtered'
         }
         result = self.getImpl().run_filter_contigs_by_length(self.getContext(),params)
+        print('RESULT:')
+        pprint(result)
+        pass
+
+
+    #### test_fractionate_contigs_pos_filter_ASSEMBLY_ASSEMBLY_01()
+    ##
+    @unittest.skip("skipped test_fractionate_contigs_ASSEMBLY_ASSEMBLY_01()")  # uncomment to skip
+    def test_fractiontate_contigs_ASSEMBLY_ASSEMBLY_01 (self):
+        method = 'fractionate_contigs_pos_filter_ASSEMBLY_ASSEMBLY_01'
+        
+        print ("\n\nRUNNING: test_"+method+"()")
+        print ("==========================================================\n\n")
+
+        # upload test data
+        try:
+            auClient = AssemblyUtil(self.callback_url, token=self.getContext()['token'])
+        except Exception as e:
+            raise ValueError('Unable to instantiate auClient with callbackURL: '+ self.callback_url +' ERROR: ' + str(e))
+        base_1 = 'assembly_1plus2'
+        base_2 = 'assembly_2'
+        type_1 = 'Assembly'
+        type_2 = 'Assembly'
+        ass_file_1_fa = base_1+'.fa'
+        ass_file_2_fa = base_2+'.fa'
+        ass_path_1_fa = os.path.join(self.scratch, ass_file_1_fa)
+        ass_path_2_fa = os.path.join(self.scratch, ass_file_2_fa)
+        shutil.copy(os.path.join("data", ass_file_1_fa), ass_path_1_fa)
+        shutil.copy(os.path.join("data", ass_file_2_fa), ass_path_2_fa)
+        ass_ref_1 = auClient.save_assembly_from_fasta({
+            'file': {'path': ass_path_1_fa},
+            'workspace_name': self.getWsName(),
+            'assembly_name': base_1+'.'+type_1
+        })
+        ass_ref_2 = auClient.save_assembly_from_fasta({
+            'file': {'path': ass_path_2_fa},
+            'workspace_name': self.getWsName(),
+            'assembly_name': base_2+'.'+type_2
+        })
+
+        # run method
+        base_output_name = method+'_output'
+        fractionate_mode = 'both'
+        params = {
+            'workspace_name': self.getWsName(),
+            'input_assembly_ref': ass_ref_1,
+            'input_pos_filter_obj_refs': [ass_ref_2],
+            'fractionate_mode': fractionate_mode,
+            'output_name': 'test_fractionated'+'-'+base_1+'.'+type_1+'-'+base_2+'.'+type_2+'-'+fractionate_mode
+        }
+        result = self.getImpl().run_fractionate_contigs(self.getContext(),params)
+        print('RESULT:')
+        pprint(result)
+        pass
+
+
+    #### test_fractionate_contigs_pos_filter_AMA_ASSEMBLY_01()
+    ##
+    # HIDE @unittest.skip("skipped test_fractionate_contigs_AMA_ASSEMBLY_01()")  # uncomment to skip
+    def test_fractiontate_contigs_AMA_ASSEMBLY_01 (self):
+        method = 'fractionate_contigs_pos_filter_AMA_ASSEMBLY_01'
+        
+        print ("\n\nRUNNING: test_"+method+"()")
+        print ("==========================================================\n\n")
+
+        # upload test data
+        try:
+            auClient = AssemblyUtil(self.callback_url, token=self.getContext()['token'])
+        except Exception as e:
+            raise ValueError('Unable to instantiate auClient with callbackURL: '+ self.callback_url +' ERROR: ' + str(e))
+        try:
+            gfuClient = GenomeFileUtil(self.callback_url, token=self.getContext()['token'])
+        except Exception as e:
+            raise ValueError('Unable to instantiate gfuClient with callbackURL: '+ self.callback_url +' ERROR: ' + str(e))
+
+        base_1 = 'assembly_1plus2'
+        base_2 = 'assembly_2'
+        type_1 = 'AMA'
+        type_2 = 'Assembly'
+        ass_file_1_fa = base_1+'.fa'
+        ass_file_1_gff = base_1+'.gff'
+        ass_file_2_fa = base_2+'.fa'
+        ass_path_1_fa = os.path.join(self.scratch, ass_file_1_fa)
+        ass_path_1_gff = os.path.join(self.scratch, ass_file_1_gff)
+        ass_path_2_fa = os.path.join(self.scratch, ass_file_2_fa)
+        shutil.copy(os.path.join("data", ass_file_1_fa), ass_path_1_fa)
+        shutil.copy(os.path.join("data", ass_file_1_gff), ass_path_1_gff)
+        shutil.copy(os.path.join("data", ass_file_2_fa), ass_path_2_fa)
+        ass_ref_1 = gfuClient.fasta_gff_to_metagenome({
+            'fasta_file': {'path': ass_path_1_fa},
+            'gff_file': {'path': ass_path_1_gff},
+            'generate_missing_genes': 1,
+            'source': 'GFF',
+            'scientific_name': base_1,
+            'workspace_name': self.getWsName(),
+            'genome_name': base_1+'.'+type_1
+        }).get('metagenome_ref')
+        ass_ref_2 = auClient.save_assembly_from_fasta({
+            'file': {'path': ass_path_2_fa},
+            'workspace_name': self.getWsName(),
+            'assembly_name': base_2+'.'+type_2
+        })
+
+        # run method
+        base_output_name = method+'_output'
+        fractionate_mode = 'both'
+        params = {
+            'workspace_name': self.getWsName(),
+            'input_assembly_ref': ass_ref_1,
+            'input_pos_filter_obj_refs': [ass_ref_2],
+            'fractionate_mode': fractionate_mode,
+            'output_name': 'test_fractionated'+'-'+base_1+'.'+type_1+'-'+base_2+'.'+type_2+'-'+fractionate_mode
+        }
+        result = self.getImpl().run_fractionate_contigs(self.getContext(),params)
         print('RESULT:')
         pprint(result)
         pass

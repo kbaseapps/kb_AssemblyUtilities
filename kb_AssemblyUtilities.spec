@@ -51,7 +51,21 @@ module kb_AssemblyUtilities {
 	string         fractionate_mode;
     } Fractionate_Contigs_Params;
 
-    funcdef run_fractionate_contigs (Fractionate_Contigs_Params params)  returns (ReportResults) authentication required;    
+    typedef structure {
+        string report_name;
+        string report_ref;
+	int    source_contigs_count;
+	int    positive_contigs_count;
+	int    negative_contigs_count;
+	int    source_contigs_sum_length;
+	int    positive_contigs_sum_length;
+	int    negative_contigs_sum_length;
+	int    source_contigs_feature_count;
+	int    positive_contigs_feature_count;
+	int    negative_contigs_feature_count;
+    } Fractionate_Contigs_Results;
+
+    funcdef run_fractionate_contigs (Fractionate_Contigs_Params params)  returns (Fractionate_Contigs_Results) authentication required;    
 
 
 };
