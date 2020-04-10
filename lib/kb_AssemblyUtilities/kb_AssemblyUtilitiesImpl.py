@@ -629,8 +629,7 @@ class kb_AssemblyUtilities:
             pos_filter_contig_ids = dict()
         
             for i,input_ref in enumerate(params['input_pos_filter_obj_refs']):
-
-                # assembly obj info
+                # get object
                 try:
                     #input_obj_info = wsClient.get_object_info_new ({'objects':[{'ref':input_ref}]})[0]
                     input_obj = wsClient.get_objects2({'objects':[{'ref':input_ref}]})['data'][0]
@@ -640,7 +639,6 @@ class kb_AssemblyUtilities:
                     input_obj_name = input_obj_info[NAME_I]
                 except Exception as e:
                     raise ValueError('Unable to get object from workspace: (' + input_ref +'): ' + str(e))
-
                 if input_obj_type not in accepted_input_types:
                     raise ValueError ("Input object "+input_obj_name+" of type '"+input_obj_type+"' not accepted.  Must be one of "+", ".join(accepted_input_types))
 
@@ -656,31 +654,13 @@ class kb_AssemblyUtilities:
                     for contig_id in input_obj_data['contig_ids']:
                         pos_filter_contig_ids[contig_id] = True
 
-                # AssemblySet or GenomeSet
-                elif input_obj_type == assembly_set_obj_type \
-                     or input_obj_type == genome_set_obj_type:
+                # AssemblySet
+                elif input_obj_type == assembly_set_obj_type:
+                    try:
+                        set_obj = setAPI_Client.get_assembly_set_v1 ({'ref':input_ref, 'include_item_info':1})
+                    except Exception as e:
+                        raise ValueError('Unable to get object '+input_obj_name+' from workspace: (' + input_ref +')' + str(e))
 
-                    # AssemblySet
-                    if input_obj_type == assembly_set_obj_type:
-                        try:
-                            set_obj = setAPI_Client.get_assembly_set_v1 ({'ref':input_ref, 'include_item_info':1})
-                        except Exception as e:
-                            raise ValueError('Unable to get object '+input_obj_name+' from workspace: (' + input_ref +')' + str(e))
-
-                    # GenomeSet
-                    else:
-                        # use SetAPI when it sends back 'items' for KBaseSearch.GenomeSet
-                        #try:
-                        #    set_obj = setAPI_Client.get_genome_set_v1 ({'ref':input_ref, 'include_item_info':1})
-                        #except Exception as e:
-                        #    raise ValueError('Unable to get object '+input_obj_name+' from workspace: (' + input_ref +')' + str(e))
-                        # for now use this mimic to get the same 'items' structure
-                        set_obj = wsClient.get_objects2({'objects':[{'ref':input_ref}]})['data'][0]
-                        set_obj['data']['items'] = []
-                        for element_key in set_obj['data']['elements'].keys():
-                            set_obj['data']['items'].append(set_obj['data']['elements'][element_key])
-                        
-                    # Both types
                     for item_obj in set_obj['data']['items']:
                         this_input_ref = item_obj['ref']
                         try:
@@ -688,11 +668,22 @@ class kb_AssemblyUtilities:
                             this_input_obj_data = this_input_obj['data']
                         except Exception as e:
                             raise ValueError('Unable to get object from workspace: (' + this_input_ref +'): ' + str(e))
-                        for contig_id in this_input_obj_data['contig_ids']:
-                            pos_filter_contig_ids[contig_id] = True
+                        for contig_key in this_input_obj_data['contigs'].keys():
+                            pos_filter_contig_ids[this_input_obj_data['contigs'][contig_key]['contig_id']] = True
 
                 # GenomeSet
                 elif input_obj_type == genome_set_obj_type:
+                    # use SetAPI when it sends back 'items' for KBaseSearch.GenomeSet
+                    #try:
+                    #    set_obj = setAPI_Client.get_genome_set_v1 ({'ref':input_ref, 'include_item_info':1})
+                    #except Exception as e:
+                    #    raise ValueError('Unable to get object '+input_obj_name+' from workspace: (' + input_ref +')' + str(e))
+                    # for now use this mimic to get the same 'items' structure
+                    set_obj = wsClient.get_objects2({'objects':[{'ref':input_ref}]})['data'][0]
+                    set_obj['data']['items'] = []
+                    for element_key in set_obj['data']['elements'].keys():
+                        set_obj['data']['items'].append(set_obj['data']['elements'][element_key])
+
                     for item_obj in set_obj['data']['items']:
                         this_input_ref = item_obj['ref']
                         try:
@@ -705,8 +696,8 @@ class kb_AssemblyUtilities:
 
                 # BinnedContigs
                 elif input_obj_type == binned_contigs_obj_type:
-                    for bin in bins:
-                        for contig_id in contigs.keys():
+                    for bin in input_obj_data['bins']:
+                        for contig_id in bin['contigs'].keys():
                             pos_filter_contig_ids[contig_id] = True
                 
                 else:

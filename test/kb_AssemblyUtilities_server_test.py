@@ -48,6 +48,7 @@ class kb_AssemblyUtilitiesTest(unittest.TestCase):
                              }],
                         'authenticated': 1})
         cls.wsURL = cls.cfg['workspace-url']
+        cls.serviceWizardURL = cls.cfg['srv-wiz-url']
         cls.wsClient = Workspace(cls.wsURL)
         cls.serviceImpl = kb_AssemblyUtilities(cls.cfg)
         cls.scratch = cls.cfg['scratch']
@@ -89,7 +90,7 @@ class kb_AssemblyUtilitiesTest(unittest.TestCase):
 
     #### test_filter_contigs_by_length_01()
     ##
-    @unittest.skip("skipped test_filter_contigs_by_length_01()")  # uncomment to skip
+    # HIDE @unittest.skip("skipped test_filter_contigs_by_length_01()")  # uncomment to skip
     def test_filter_contigs_by_length_01 (self):
         method = 'filter_contigs_by_length_01'
         
@@ -135,7 +136,7 @@ class kb_AssemblyUtilitiesTest(unittest.TestCase):
 
     #### test_fractionate_contigs_pos_filter_ASSEMBLY_ASSEMBLY_01()
     ##
-    @unittest.skip("skipped test_fractionate_contigs_ASSEMBLY_ASSEMBLY_01()")  # uncomment to skip
+    # HIDE @unittest.skip("skipped test_fractionate_contigs_ASSEMBLY_ASSEMBLY_01()")  # uncomment to skip
     def test_fractiontate_contigs_ASSEMBLY_ASSEMBLY_01 (self):
         method = 'fractionate_contigs_pos_filter_ASSEMBLY_ASSEMBLY_01'
         
@@ -186,7 +187,7 @@ class kb_AssemblyUtilitiesTest(unittest.TestCase):
 
     #### test_fractionate_contigs_pos_filter_AMA_ASSEMBLY_02()
     ##
-    @unittest.skip("skipped test_fractionate_contigs_AMA_ASSEMBLY_02()")  # uncomment to skip
+    # HIDE @unittest.skip("skipped test_fractionate_contigs_AMA_ASSEMBLY_02()")  # uncomment to skip
     def test_fractiontate_contigs_AMA_ASSEMBLY_02 (self):
         method = 'fractionate_contigs_pos_filter_AMA_ASSEMBLY_02'
         
@@ -249,7 +250,7 @@ class kb_AssemblyUtilitiesTest(unittest.TestCase):
 
     #### test_fractionate_contigs_pos_filter_ASSEMBLY_AMA_03()
     ##
-    @unittest.skip("skipped test_fractionate_contigs_ASSEMBLY_AMA_03()")  # uncomment to skip
+    # HIDE @unittest.skip("skipped test_fractionate_contigs_ASSEMBLY_AMA_03()")  # uncomment to skip
     def test_fractiontate_contigs_ASSEMBLY_AMA_03 (self):
         method = 'fractionate_contigs_pos_filter_ASSEMBLY_AMA_03'
         
@@ -312,7 +313,7 @@ class kb_AssemblyUtilitiesTest(unittest.TestCase):
 
     #### test_fractionate_contigs_pos_filter_ASSEMBLY_GENOME_04()
     ##
-    @unittest.skip("skipped test_fractionate_contigs_ASSEMBLY_GENOME_04()")  # uncomment to skip
+    # HIDE @unittest.skip("skipped test_fractionate_contigs_ASSEMBLY_GENOME_04()")  # uncomment to skip
     def test_fractiontate_contigs_ASSEMBLY_GENOME_04 (self):
         method = 'fractionate_contigs_pos_filter_ASSEMBLY_GENOME_04'
         
@@ -375,7 +376,7 @@ class kb_AssemblyUtilitiesTest(unittest.TestCase):
 
     #### test_fractionate_contigs_pos_filter_ASSEMBLY_GENOMELIST_05()
     ##
-    @unittest.skip("skipped test_fractionate_contigs_ASSEMBLY_GENOMELIST_05()")  # uncomment to skip
+    # HIDE @unittest.skip("skipped test_fractionate_contigs_ASSEMBLY_GENOMELIST_05()")  # uncomment to skip
     def test_fractiontate_contigs_ASSEMBLY_GENOMELIST_05 (self):
         method = 'fractionate_contigs_pos_filter_ASSEMBLY_GENOMELIST_05'
         
@@ -548,6 +549,139 @@ class kb_AssemblyUtilitiesTest(unittest.TestCase):
             'input_pos_filter_obj_refs': [genomeSet_ref],
             'fractionate_mode': fractionate_mode,
             'output_name': 'test_fractionated'+'-'+base_1+'.'+type_1+'-'+'genomeset_2a2b'+'-'+fractionate_mode
+        }
+        result = self.getImpl().run_fractionate_contigs(self.getContext(),params)
+        print('RESULT:')
+        pprint(result)
+        pass
+
+
+    #### test_fractionate_contigs_pos_filter_ASSEMBLY_ASSEMBLYSET_07()
+    ##
+    # HIDE @unittest.skip("skipped test_fractionate_contigs_ASSEMBLY_ASSEMBLYSET_07()")  # uncomment to skip
+    def test_fractiontate_contigs_ASSEMBLY_ASSEMBLYSET_07 (self):
+        method = 'fractionate_contigs_pos_filter_ASSEMBLY_ASSEMBLYSET_07'
+        
+        print ("\n\nRUNNING: test_"+method+"()")
+        print ("==========================================================\n\n")
+
+        # upload test data
+        try:
+            auClient = AssemblyUtil(self.callback_url, token=self.getContext()['token'])
+        except Exception as e:
+            raise ValueError('Unable to instantiate auClient with callbackURL: '+ self.callback_url +' ERROR: ' + str(e))
+        try:
+            setAPI_Client = SetAPI(self.serviceWizardURL, token=self.getContext()['token'])
+        except Exception as e:
+            raise ValueError('Unable to instantiate setAPI_Client with serviceWizardURL: '+ self.serviceWizardURL +' ERROR: ' + str(e))
+        base_1 = 'assembly_1plus2'
+        base_2a = 'assembly_2a'
+        base_2b = 'assembly_2b'
+        type_1 = 'Assembly'
+        type_2a = 'Assembly'
+        type_2b = 'Assembly'
+        ass_file_1_fa = base_1+'.fa.gz'
+        ass_file_2a_fa = base_2a+'.fa.gz'
+        ass_file_2b_fa = base_2b+'.fa.gz'
+        ass_path_1_fa = os.path.join(self.scratch, ass_file_1_fa)
+        ass_path_2a_fa = os.path.join(self.scratch, ass_file_2a_fa)
+        ass_path_2b_fa = os.path.join(self.scratch, ass_file_2b_fa)
+        shutil.copy(os.path.join("data", ass_file_1_fa), ass_path_1_fa)
+        shutil.copy(os.path.join("data", ass_file_2a_fa), ass_path_2a_fa)
+        shutil.copy(os.path.join("data", ass_file_2b_fa), ass_path_2b_fa)
+        ass_ref_1 = auClient.save_assembly_from_fasta({
+            'file': {'path': ass_path_1_fa},
+            'workspace_name': self.getWsName(),
+            'assembly_name': base_1+'.'+type_1
+        })
+        ass_ref_2a = auClient.save_assembly_from_fasta({
+            'file': {'path': ass_path_2a_fa},
+            'workspace_name': self.getWsName(),
+            'assembly_name': base_2a+'.'+type_2a
+        })
+        ass_ref_2b = auClient.save_assembly_from_fasta({
+            'file': {'path': ass_path_2b_fa},
+            'workspace_name': self.getWsName(),
+            'assembly_name': base_2b+'.'+type_2b
+        })
+
+        # AssemblySet
+        assemblySet_items = [{'ref': ass_ref_2a, 'label': 'assembly_2a'},
+                             {'ref': ass_ref_2b, 'label': 'assembly_2b'}]
+        assemblySet_obj = {'description': 'test assemblySet',
+                           'items': assemblySet_items}
+        assemblySet_ref = setAPI_Client.save_assembly_set_v1(
+            {'workspace_name': self.getWsName(),
+             'output_object_name': 'assembly_2a2b.AssemblySet',
+             'data': assemblySet_obj
+             })['set_ref']
+
+        # run method
+        base_output_name = method+'_output'
+        fractionate_mode = 'neg'
+        params = {
+            'workspace_name': self.getWsName(),
+            'input_assembly_ref': ass_ref_1,
+            'input_pos_filter_obj_refs': [assemblySet_ref],
+            'fractionate_mode': fractionate_mode,
+            'output_name': 'test_fractionated'+'-'+base_1+'.'+type_1+'-'+'assemblyset_2a2b'+'-'+fractionate_mode
+        }
+        result = self.getImpl().run_fractionate_contigs(self.getContext(),params)
+        print('RESULT:')
+        pprint(result)
+        pass
+
+
+    #### test_fractionate_contigs_pos_filter_ASSEMBLY_BINNEDCONTIGS_08()
+    ##
+    # HIDE @unittest.skip("skipped test_fractionate_contigs_ASSEMBLY_BINNEDCONTIGS_08()")  # uncomment to skip
+    def test_fractiontate_contigs_ASSEMBLY_BINNEDCONTIGS_08 (self):
+        method = 'fractionate_contigs_pos_filter_ASSEMBLY_BINNEDCONTIGS_08'
+        
+        print ("\n\nRUNNING: test_"+method+"()")
+        print ("==========================================================\n\n")
+
+        # upload test data
+        try:
+            auClient = AssemblyUtil(self.callback_url, token=self.getContext()['token'])
+        except Exception as e:
+            raise ValueError('Unable to instantiate auClient with callbackURL: '+ self.callback_url +' ERROR: ' + str(e))
+        try:
+            mguClient = MetagenomeUtils(self.callback_url, token=self.getContext()['token'])
+        except Exception as e:
+            raise ValueError('Unable to instantiate mguClient with callbackURL: '+ self.callback_url +' ERROR: ' + str(e))
+        base_1 = 'assembly_1plus2'
+        base_2 = 'assembly'
+        dir_2 = 'binned_contigs'
+        type_1 = 'Assembly'
+        type_2 = 'BinnedContigs'
+
+        ass_file_1_fa = base_1+'.fa.gz'
+        ass_path_1_fa = os.path.join(self.scratch, ass_file_1_fa)
+        dir_2_path = os.path.join(self.scratch, dir_2)
+        shutil.copy(os.path.join("data", ass_file_1_fa), ass_path_1_fa)
+        shutil.copytree(os.path.join("data", dir_2), dir_2_path)
+        ass_ref_1 = auClient.save_assembly_from_fasta({
+            'file': {'path': ass_path_1_fa},
+            'workspace_name': self.getWsName(),
+            'assembly_name': base_1+'.'+type_1
+        })
+        binned_contigs_ref_2 = mguClient.file_to_binned_contigs({
+            'file_directory': dir_2_path,
+            'workspace_name': self.getWsName(),
+            'assembly_ref': ass_ref_1,
+            'binned_contig_name': base_2+'.'+type_2
+        })['binned_contig_obj_ref']
+
+        # run method
+        base_output_name = method+'_output'
+        fractionate_mode = 'neg'
+        params = {
+            'workspace_name': self.getWsName(),
+            'input_assembly_ref': ass_ref_1,
+            'input_pos_filter_obj_refs': [binned_contigs_ref_2],
+            'fractionate_mode': fractionate_mode,
+            'output_name': 'test_fractionated'+'-'+base_1+'.'+type_1+'-'+'binned_contigs_2a2b'+'-'+fractionate_mode
         }
         result = self.getImpl().run_fractionate_contigs(self.getContext(),params)
         print('RESULT:')
