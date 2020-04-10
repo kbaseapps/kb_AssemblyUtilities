@@ -656,7 +656,7 @@ class kb_AssemblyUtilities:
                     for contig_id in input_obj_data['contig_ids']:
                         pos_filter_contig_ids[contig_id] = True
 
-                # AssemblySet and GenomeSet
+                # AssemblySet or GenomeSet
                 elif input_obj_type == assembly_set_obj_type \
                      or input_obj_type == genome_set_obj_type:
 
@@ -666,13 +666,33 @@ class kb_AssemblyUtilities:
                             set_obj = setAPI_Client.get_assembly_set_v1 ({'ref':input_ref, 'include_item_info':1})
                         except Exception as e:
                             raise ValueError('Unable to get object '+input_obj_name+' from workspace: (' + input_ref +')' + str(e))
+
                     # GenomeSet
                     else:
+                        # use SetAPI when it sends back 'items' for KBaseSearch.GenomeSet
+                        #try:
+                        #    set_obj = setAPI_Client.get_genome_set_v1 ({'ref':input_ref, 'include_item_info':1})
+                        #except Exception as e:
+                        #    raise ValueError('Unable to get object '+input_obj_name+' from workspace: (' + input_ref +')' + str(e))
+                        # for now use this mimic to get the same 'items' structure
+                        set_obj = wsClient.get_objects2({'objects':[{'ref':input_ref}]})['data'][0]
+                        set_obj['data']['items'] = []
+                        for element_key in set_obj['data']['elements'].keys():
+                            set_obj['data']['items'].append(set_obj['data']['elements'][element_key])
+                        
+                    # Both types
+                    for item_obj in set_obj['data']['items']:
+                        this_input_ref = item_obj['ref']
                         try:
-                            set_obj = setAPI_Client.get_genome_set_v1 ({'ref':input_ref, 'include_item_info':1})
+                            this_input_obj = wsClient.get_objects2({'objects':[{'ref':this_input_ref}]})['data'][0]
+                            this_input_obj_data = this_input_obj['data']
                         except Exception as e:
-                            raise ValueError('Unable to get object '+input_obj_name+' from workspace: (' + input_ref +')' + str(e))
+                            raise ValueError('Unable to get object from workspace: (' + this_input_ref +'): ' + str(e))
+                        for contig_id in this_input_obj_data['contig_ids']:
+                            pos_filter_contig_ids[contig_id] = True
 
+                # GenomeSet
+                elif input_obj_type == genome_set_obj_type:
                     for item_obj in set_obj['data']['items']:
                         this_input_ref = item_obj['ref']
                         try:
