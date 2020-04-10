@@ -338,10 +338,14 @@ class Application(object):
         self.serverlog.set_log_level(6)
         self.rpc_service = JSONRPCServiceCustom()
         self.method_authentication = dict()
-        self.rpc_service.add(impl_kb_AssemblyUtilities.run_kb_AssemblyUtilities,
-                             name='kb_AssemblyUtilities.run_kb_AssemblyUtilities',
+        self.rpc_service.add(impl_kb_AssemblyUtilities.run_filter_contigs_by_length,
+                             name='kb_AssemblyUtilities.run_filter_contigs_by_length',
                              types=[dict])
-        self.method_authentication['kb_AssemblyUtilities.run_kb_AssemblyUtilities'] = 'required'  # noqa
+        self.method_authentication['kb_AssemblyUtilities.run_filter_contigs_by_length'] = 'required'  # noqa
+        self.rpc_service.add(impl_kb_AssemblyUtilities.run_fractionate_contigs,
+                             name='kb_AssemblyUtilities.run_fractionate_contigs',
+                             types=[dict])
+        self.method_authentication['kb_AssemblyUtilities.run_fractionate_contigs'] = 'required'  # noqa
         self.rpc_service.add(impl_kb_AssemblyUtilities.status,
                              name='kb_AssemblyUtilities.status',
                              types=[dict])

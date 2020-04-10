@@ -1,0 +1,76 @@
+#
+# define display information
+#
+name: Fractionate Contigs - v1.0.0
+tooltip: |
+    Separate Contigs in Assembly objects by presence/absence with respect to another object
+
+screenshots: []
+
+icon: kb-blue.png
+
+#
+# define a set of similar methods that might be useful to the user
+#
+suggestions:
+    apps:
+        related:
+            []
+        next:
+            []
+    methods:
+        related:
+            []
+        next:
+            []
+
+#
+# Configure the display and description of parameters
+#
+parameters :
+    input_assembly_ref:
+        ui-name : |
+            Assembly or AnnotatedMetagenomeAssembly
+        short-hint : |
+            Assembly or AnnotatedMetagenomeAssembly to fractionate
+    input_pos_filter_obj_refs:
+        ui-name : |
+            Positive Filter Objects
+        short-hint : |
+            Object from which to identify positive contigs (Assembly, AssemblySet, AnnotatedMetagenomeAssembly, BinnedContigs, Genome, or GenomeSet)
+    fractionate_mode:
+        ui-name : |
+            Output Fractions
+        short-hint : |
+            Select whether to produce Positive (present), Negative (absent), or Both fractions
+    output_name:
+        ui-name : |
+            Output name
+        short-hint : |
+            Basename for the fractionated Assembly or AnnotatedMetagenomeAssembly output object
+
+description : |
+    <p><b>Fractionate Contigs</b> allows the user split an Assembly or AnnotatedMetagenomeAssembly into those contigs that are also found or not found in another object.  For example, a user may wish to obtain the fraction of Contigs from a metagenome assembly that did not wind up in a Bin in a BinnedContig object.</p>
+    <p><hr></p>
+    <p><i>Designed and Implemented for KBase by <a href="https://narrative.kbase.us/#people/dylan">Dylan Chivian (DCChivian@lbl.gov)</a></i></p>
+    <p><hr></p>
+    <p><b>Configuration:</b></p>
+    <p><b><i>Assembly Object:</i></b> The Assembly object is a collection of assembled genome fragments, called "contigs".  This field can also accept an AnnotatedMetagenomeAssembly object.  The IDs of the contigs in the Assembly (or AMA) object must match the IDs of the contigs in the positive filter object, which should always be the case for objects derived from the starting Assembly.</p>
+    <p><b><i>Positive Filter Object(s):</i></b> The contigs found in this object, or collection of objects, are used to as the Positive filter (see Fractionation Mode option).  Appropriate input types are Assembly, AssemblySet, AnnotatedMetagenomeAssembly, BinnedContigs, Genome, or GenomeSet.</p>
+    <p><b><i>Fractionation Mode:</i></b> Fractionation splits the contigs of the input Assembly object into those that are also present in the <i>Positive Filter Object(s)</i> (<b>Positive</b> mode), absent from the <i>Positive Filter Object(s)</i> (<b>Negative</b> mode), or <b>Both</b>.</p>
+    <p><hr></p>
+    <p><b>Output:</b></p>
+    <p><b><i>Output Object(s):</i></b>
+    <p><b><i>Output Object(s):</i></b> The Output object(s) will match the type of the input Assembly type, either Assembly or AnnotatedMetagenomeAssembly.  Depending on the fractionation mode, there will be two objects if the mode is <b>Both</b>, or one if <b>Positive</b> or <b>Negative</b> fractionation is requested.</p>
+    <p><b><i>Output Report:</i></b>
+    <ul>
+    <li> The report indicates how many contigs are present in each fraction.
+    </ul>
+    </p>
+    <p><b><i>Downloadable files:</i></b> The Output Assembly objects can be accessed in the Data Pane for download as FASTA (or GFF+FASTA for AnnotatedMetagenomeAssembly).</p>
+
+publications :
+    -
+        display-text: |
+            Arkin AP, Cottingham RW, Henry CS, Harris NL, Stevens RL, Maslov S, et al. KBase: The United States Department of Energy Systems Biology Knowledgebase. Nature Biotechnology. 2018;36: 566. doi: 10.1038/nbt.4163
+        link: https://www.nature.com/articles/nbt.4163

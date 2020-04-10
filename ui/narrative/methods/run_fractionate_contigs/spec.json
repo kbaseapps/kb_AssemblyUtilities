@@ -1,0 +1,132 @@
+{
+    "ver": "1.0.0",
+    "authors": [
+        "dylan"
+    ],
+    "contact": "http://kbase.us/contact-us/",
+    "visible": true,
+    "categories": ["active","util","assembly"],
+    "widgets": {
+        "input": null,
+        "output": "no-display"
+    },
+    "parameters": [ 
+        {
+            "id": "input_assembly_ref",
+            "optional": false,
+            "advanced": false,
+            "allow_multiple": false,
+            "default_values": [ "" ],
+            "field_type": "text",
+            "text_options": {
+                "valid_ws_types": [ "KBaseGenomeAnnotations.Assembly", "KBaseMetagenomes.AnnotatedMetagenomeAssembly" ],
+		"is_output_name": false
+            }
+        },
+        {
+            "id": "input_pos_filter_obj_refs",
+            "optional": false,
+            "advanced": false,
+            "allow_multiple": true,
+            "default_values": [ "" ],
+            "field_type": "text",
+            "text_options": {
+                "valid_ws_types": [ "KBaseGenomeAnnotations.Assembly", "KBaseSets.AssemblySet", "KBaseMetagenomes.AnnotatedMetagenomeAssembly", "KBaseGenomes.Genome", "KBaseSearch.GenomeSet" ],
+		"is_output_name": false
+            }
+        },
+        {
+            "id": "fractionate_mode",
+            "optional": false,
+            "advanced": false,
+            "allow_multiple": false,
+            "default_values": [ "neg" ],
+            "field_type": "dropdown",
+            "dropdown_options": {
+                "options": [
+		    {
+			"value": "both",
+			"display": "Both (split into absent and present)",
+			"id": "fractionate_mode-both",
+			"ui-name": "fractionate_mode-both"
+		    },
+		    {
+			"value": "neg",
+			"display": "Negative (absent)",
+			"id": "fractionate_mode-neg",
+			"ui-name": "fractionate_mode-neg"
+		    },
+		    {
+			"value": "pos",
+			"display": "Positive (present)",
+			"id": "fractionate_mode-pos",
+			"ui-name": "fractionate_mode-pos"
+		    }
+		]
+            }
+        },
+        {
+            "id": "output_name",
+            "optional": false,
+            "advanced": false,
+            "allow_multiple": false,
+            "default_values": [ "" ],
+            "field_type": "text",
+            "text_options": {
+                "valid_ws_types": [ "KBaseGenomeAnnotations.Assembly", "KBaseMetagenomes.AnnotatedMetagenomeAssembly" ],
+		"is_output_name": true
+            }
+        }
+    ],
+
+    "behavior": {
+        "service-mapping": {
+            "url": "",
+            "name": "kb_AssemblyUtilities",
+            "method": "run_fractionate_contigs",
+            "input_mapping": [
+                {
+                    "narrative_system_variable": "workspace",
+                    "target_property": "workspace_name"
+                },
+                {
+                    "input_parameter": "input_assembly_ref",
+                    "target_property": "input_assembly_ref",
+		    "target_type_transform": "resolved-ref"
+                },
+                {
+                    "input_parameter": "input_pos_filter_obj_refs",
+                    "target_property": "input_pos_filter_obj_refs",
+		    "target_type_transform": "list<resolved-ref>"
+                },
+                {
+                    "input_parameter": "fractionate_mode",
+                    "target_property": "fractionate_mode"
+                },
+                {
+                    "input_parameter": "output_name",
+                    "target_property": "output_name"
+                }
+            ],
+            "output_mapping": [
+                {
+                    "narrative_system_variable": "workspace",
+                    "target_property": "workspace_name"
+                },
+                {
+                    "service_method_output_path": [0, "report_name"],
+                    "target_property": "report_name"
+                },
+                {
+                    "service_method_output_path": [0, "report_ref"],
+                    "target_property": "report_ref"
+                },
+                {
+		    "constant_value": "5",
+                    "target_property": "report_window_line_height"
+                }
+            ]
+        }
+    },
+    "job_id_output_field": "docker"
+}
