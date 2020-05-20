@@ -924,7 +924,7 @@ class kb_AssemblyUtilities:
             report_info = kbr.create_extended_report(
                 {'message': report_text,
                  'objects_created': objects_created,
-                 'direct_html_link_index': 0,
+                 'direct_html_link_index': None,
                  'html_links': [],
                  'file_links': [],
                  'report_object_name': 'kb_fractionate_contigs_report_' + str(uuid.uuid4()),
