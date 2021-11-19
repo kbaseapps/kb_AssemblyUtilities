@@ -136,7 +136,7 @@ class kb_AssemblyUtilitiesTest(unittest.TestCase):
 
     #### test_fractionate_contigs_pos_filter_ASSEMBLY_ASSEMBLY_01()
     ##
-    # HIDE @unittest.skip("skipped test_fractionate_contigs_ASSEMBLY_ASSEMBLY_01()")  # uncomment to skip
+    @unittest.skip("skipped test_fractionate_contigs_ASSEMBLY_ASSEMBLY_01()")  # uncomment to skip
     def test_fractiontate_contigs_ASSEMBLY_ASSEMBLY_01 (self):
         method = 'fractionate_contigs_pos_filter_ASSEMBLY_ASSEMBLY_01'
         
@@ -187,7 +187,7 @@ class kb_AssemblyUtilitiesTest(unittest.TestCase):
 
     #### test_fractionate_contigs_pos_filter_AMA_ASSEMBLY_02()
     ##
-    # HIDE @unittest.skip("skipped test_fractionate_contigs_AMA_ASSEMBLY_02()")  # uncomment to skip
+    @unittest.skip("skipped test_fractionate_contigs_AMA_ASSEMBLY_02()")  # uncomment to skip
     def test_fractiontate_contigs_AMA_ASSEMBLY_02 (self):
         method = 'fractionate_contigs_pos_filter_AMA_ASSEMBLY_02'
         
@@ -250,7 +250,7 @@ class kb_AssemblyUtilitiesTest(unittest.TestCase):
 
     #### test_fractionate_contigs_pos_filter_ASSEMBLY_AMA_03()
     ##
-    # HIDE @unittest.skip("skipped test_fractionate_contigs_ASSEMBLY_AMA_03()")  # uncomment to skip
+    @unittest.skip("skipped test_fractionate_contigs_ASSEMBLY_AMA_03()")  # uncomment to skip
     def test_fractiontate_contigs_ASSEMBLY_AMA_03 (self):
         method = 'fractionate_contigs_pos_filter_ASSEMBLY_AMA_03'
         
@@ -313,7 +313,7 @@ class kb_AssemblyUtilitiesTest(unittest.TestCase):
 
     #### test_fractionate_contigs_pos_filter_ASSEMBLY_GENOME_04()
     ##
-    # HIDE @unittest.skip("skipped test_fractionate_contigs_ASSEMBLY_GENOME_04()")  # uncomment to skip
+    @unittest.skip("skipped test_fractionate_contigs_ASSEMBLY_GENOME_04()")  # uncomment to skip
     def test_fractiontate_contigs_ASSEMBLY_GENOME_04 (self):
         method = 'fractionate_contigs_pos_filter_ASSEMBLY_GENOME_04'
         
@@ -376,7 +376,7 @@ class kb_AssemblyUtilitiesTest(unittest.TestCase):
 
     #### test_fractionate_contigs_pos_filter_ASSEMBLY_GENOMELIST_05()
     ##
-    # HIDE @unittest.skip("skipped test_fractionate_contigs_ASSEMBLY_GENOMELIST_05()")  # uncomment to skip
+    @unittest.skip("skipped test_fractionate_contigs_ASSEMBLY_GENOMELIST_05()")  # uncomment to skip
     def test_fractiontate_contigs_ASSEMBLY_GENOMELIST_05 (self):
         method = 'fractionate_contigs_pos_filter_ASSEMBLY_GENOMELIST_05'
         
@@ -456,7 +456,7 @@ class kb_AssemblyUtilitiesTest(unittest.TestCase):
 
     #### test_fractionate_contigs_pos_filter_ASSEMBLY_GENOMESET_06()
     ##
-    # HIDE @unittest.skip("skipped test_fractionate_contigs_ASSEMBLY_GENOMESET_06()")  # uncomment to skip
+    @unittest.skip("skipped test_fractionate_contigs_ASSEMBLY_GENOMESET_06()")  # uncomment to skip
     def test_fractiontate_contigs_ASSEMBLY_GENOMESET_06 (self):
         method = 'fractionate_contigs_pos_filter_ASSEMBLY_GENOMESET_06'
         
@@ -558,7 +558,7 @@ class kb_AssemblyUtilitiesTest(unittest.TestCase):
 
     #### test_fractionate_contigs_pos_filter_ASSEMBLY_ASSEMBLYSET_07()
     ##
-    # HIDE @unittest.skip("skipped test_fractionate_contigs_ASSEMBLY_ASSEMBLYSET_07()")  # uncomment to skip
+    @unittest.skip("skipped test_fractionate_contigs_ASSEMBLY_ASSEMBLYSET_07()")  # uncomment to skip
     def test_fractiontate_contigs_ASSEMBLY_ASSEMBLYSET_07 (self):
         method = 'fractionate_contigs_pos_filter_ASSEMBLY_ASSEMBLYSET_07'
         
@@ -634,7 +634,7 @@ class kb_AssemblyUtilitiesTest(unittest.TestCase):
 
     #### test_fractionate_contigs_pos_filter_ASSEMBLY_BINNEDCONTIGS_08()
     ##
-    # HIDE @unittest.skip("skipped test_fractionate_contigs_ASSEMBLY_BINNEDCONTIGS_08()")  # uncomment to skip
+    @unittest.skip("skipped test_fractionate_contigs_ASSEMBLY_BINNEDCONTIGS_08()")  # uncomment to skip
     def test_fractiontate_contigs_ASSEMBLY_BINNEDCONTIGS_08 (self):
         method = 'fractionate_contigs_pos_filter_ASSEMBLY_BINNEDCONTIGS_08'
         

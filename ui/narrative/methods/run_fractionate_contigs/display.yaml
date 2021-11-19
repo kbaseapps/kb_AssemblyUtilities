@@ -1,7 +1,7 @@
 #
 # define display information
 #
-name: Fractionate Contigs - v1.0.0
+name: Fractionate Contigs - v1.2.0
 tooltip: |
     Separate Contigs in Assembly objects by presence/absence with respect to another object
 
