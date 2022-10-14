@@ -41,9 +41,9 @@ class kb_AssemblyUtilities:
     # state. A method could easily clobber the state set by another while
     # the latter method is running.
     ######################################### noqa
-    VERSION = "1.0.0"
-    GIT_URL = "https://github.com/dcchivian/kb_AssemblyUtilities"
-    GIT_COMMIT_HASH = "ade3e6b2b9f49baed1f869d897ed5baf4d1e9026"
+    VERSION = "1.2.0"
+    GIT_URL = "https://github.com/kbaseapps/kb_AssemblyUtilities"
+    GIT_COMMIT_HASH = "1107fbca69258b67d4b66e1700e10cdb76e63244"
 
     #BEGIN_CLASS_HEADER
     workspaceURL     = None
@@ -295,8 +295,8 @@ class kb_AssemblyUtilities:
                                     filtered_contig_count[ass_i] += 1
                                     filt_handle.write(last_header)  # last_header already has newline
                                     filt_handle.write(seq_buf+"\n")
-                                seq_buf = ''
-                                last_header = fasta_line
+                            seq_buf = ''
+                            last_header = fasta_line
                         else:
                             seq_buf += ''.join(fasta_line.split())
                     if seq_buf != '':
@@ -412,7 +412,7 @@ class kb_AssemblyUtilities:
             report_info = kbr.create_extended_report(
                 {'message': report_text,
                  'objects_created': objects_created,
-                 'direct_html_link_index': 0,
+                 'direct_html_link_index': None,
                  'html_links': [],
                  'file_links': [],
                  'report_object_name': 'kb_filter_contigs_by_length_report_' + str(uuid.uuid4()),
