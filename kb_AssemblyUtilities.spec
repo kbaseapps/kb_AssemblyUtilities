@@ -68,4 +68,28 @@ module kb_AssemblyUtilities {
     funcdef run_fractionate_contigs (Fractionate_Contigs_Params params)  returns (Fractionate_Contigs_Results) authentication required;    
 
 
+    /* assembly_depth_of_coverage_with_bbmap()
+    **
+    **  get the per contig and whole assembly average depth of coverage
+    */
+    typedef structure {
+        workspace_name workspace_name;
+        list<data_obj_ref> input_assembly_refs;   /* Assembly, AssemblySet, Genome, GenomeSet, or AMA */
+        list<data_obj_ref> input_reads_refs;   /* Reads */
+    } Assembly_Depth_of_Coverage_with_BBMap_Params;
+
+    typedef structure {
+        string report_name;
+        string report_ref;
+	mapping<string,string> run_metadata;
+	list<string> input_reads_names; 
+	mapping<string,mapping<string,int>> input_reads_stats;
+	mapping<string,mapping<string,int>> contig_stats;
+	mapping<string,mapping<string,int>> assembly_stats;
+	mapping<string,list<float>> contig_avg_doc;
+	mapping<string,list<float>> assembly_avg_doc;
+    } Assembly_Depth_of_Coverage_with_BBMap_Results;
+
+    funcdef run_assembly_depth_of_coverage_with_bbmap (Assembly_Depth_of_Coverage_with_BBMap_Params params)  returns (Assembly_Depth_of_Coverage_with_BBMap_Results) authentication required;    
+
 };

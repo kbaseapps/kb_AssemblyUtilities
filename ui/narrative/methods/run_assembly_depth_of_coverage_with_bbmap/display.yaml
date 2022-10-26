@@ -1,0 +1,52 @@
+#
+# define display information
+#
+name: Assembly Depth of Coverage with BBMap - v1.3.0
+tooltip: |
+    Calculate the Average Depth of Coverage for Contigs in Assembly objects and overall for each Assembly/Genome/AnnotatedMetagenomeAssembly
+
+screenshots: []
+
+icon: kb-blue.png
+
+#
+# define a set of similar methods that might be useful to the user
+#
+suggestions:
+    apps:
+        related:
+            []
+        next:
+            []
+    methods:
+        related:
+            []
+        next:
+            []
+
+#
+# Configure the display and description of parameters
+#
+parameters :
+    input_assembly_refs:
+        ui-name : |
+            Assembled Objects
+        short-hint : |
+            Objects for which to calculate DoC for each Contig and overall - Assembly, AssemblySet, Genome, GenomeSet, BinnedContig, or AnnotatedMetagenomeAssembly (may be more than one)
+    input_reads_refs:
+        ui-name : |
+            Reads Libraries
+        short-hint : |
+            Reads Libraries from which to calculate DoC
+
+description : |
+    <p><b>Assembly Depth of Coverage with BBMap</b> allows the user calculate the Depth of Coverage over one or more Reads Libraries for one or more Data objects that contains an Assembly object.  Both the per-contig average DoC and overall average DoC for the whole assembly (has the most meaning for Genome objects) are calculated.</p>
+    <p><hr></p>
+    <p><i>Designed and Implemented for KBase by <a href="https://narrative.kbase.us/#people/dylan">Dylan Chivian (DCChivian@lbl.gov)</a></i></p>
+
+
+publications :
+    -
+        display-text: |
+            Arkin AP, Cottingham RW, Henry CS, Harris NL, Stevens RL, Maslov S, et al. KBase: The United States Department of Energy Systems Biology Knowledgebase. Nature Biotechnology. 2018;36: 566. doi: 10.1038/nbt.4163
+        link: https://www.nature.com/articles/nbt.4163

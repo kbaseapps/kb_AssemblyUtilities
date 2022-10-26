@@ -346,6 +346,10 @@ class Application(object):
                              name='kb_AssemblyUtilities.run_fractionate_contigs',
                              types=[dict])
         self.method_authentication['kb_AssemblyUtilities.run_fractionate_contigs'] = 'required'  # noqa
+        self.rpc_service.add(impl_kb_AssemblyUtilities.run_assembly_depth_of_coverage_with_bbmap,
+                             name='kb_AssemblyUtilities.run_assembly_depth_of_coverage_with_bbmap',
+                             types=[dict])
+        self.method_authentication['kb_AssemblyUtilities.run_assembly_depth_of_coverage_with_bbmap'] = 'required'  # noqa
         self.rpc_service.add(impl_kb_AssemblyUtilities.status,
                              name='kb_AssemblyUtilities.status',
                              types=[dict])

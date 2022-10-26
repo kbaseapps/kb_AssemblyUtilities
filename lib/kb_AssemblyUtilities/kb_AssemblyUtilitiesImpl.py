@@ -19,6 +19,7 @@ from pprint import pprint, pformat
 from installed_clients.WorkspaceClient import Workspace
 from installed_clients.DataFileUtilClient import DataFileUtil
 from installed_clients.AssemblyUtilClient import AssemblyUtil
+from installed_clients.ReadsUtilsClient import ReadsUtils
 from installed_clients.GenomeFileUtilClient import GenomeFileUtil
 from installed_clients.MetagenomeUtilsClient import MetagenomeUtils
 from installed_clients.SetAPIServiceClient import SetAPI
@@ -41,11 +42,14 @@ class kb_AssemblyUtilities:
     # state. A method could easily clobber the state set by another while
     # the latter method is running.
     ######################################### noqa
-    VERSION = "1.2.0"
+    VERSION = "1.3.0"
     GIT_URL = "https://github.com/kbaseapps/kb_AssemblyUtilities"
-    GIT_COMMIT_HASH = "1107fbca69258b67d4b66e1700e10cdb76e63244"
+    GIT_COMMIT_HASH = "4304b6160f959fbc7302c6cf39799b5c37fd6ec6"
 
     #BEGIN_CLASS_HEADER
+
+    BBMAP_bin = os.path.join (os.path.sep, 'kb', 'module', 'bbmap', 'bbmap.sh')
+
     workspaceURL     = None
     shockURL         = None
     handleURL        = None
@@ -961,6 +965,563 @@ class kb_AssemblyUtilities:
         # At some point might do deeper type checking...
         if not isinstance(returnVal, dict):
             raise ValueError('Method run_fractionate_contigs return value ' +
+                             'returnVal is not type dict as required.')
+        # return the results
+        return [returnVal]
+
+    def run_assembly_depth_of_coverage_with_bbmap(self, ctx, params):
+        """
+        :param params: instance of type
+           "Assembly_Depth_of_Coverage_with_BBMap_Params"
+           (assembly_depth_of_coverage_with_bbmap() ** **  get the per contig
+           and whole assembly average depth of coverage) -> structure:
+           parameter "workspace_name" of type "workspace_name" (** The
+           workspace object refs are of form: ** **    objects =
+           ws.get_objects([{'ref':
+           params['workspace_id']+'/'+params['obj_name']}]) ** ** "ref" means
+           the entire name combining the workspace id and the object name **
+           "id" is a numerical identifier of the workspace or object, and
+           should just be used for workspace ** "name" is a string identifier
+           of a workspace or object.  This is received from Narrative.),
+           parameter "input_assembly_refs" of list of type "data_obj_ref",
+           parameter "input_reads_refs" of list of type "data_obj_ref"
+        :returns: instance of type
+           "Assembly_Depth_of_Coverage_with_BBMap_Results" -> structure:
+           parameter "report_name" of String, parameter "report_ref" of
+           String, parameter "run_metadata" of mapping from String to String,
+           parameter "input_reads_names" of list of String, parameter
+           "input_reads_stats" of mapping from String to mapping from String
+           to Long, parameter "contig_stats" of mapping from String to
+           mapping from String to Long, parameter "assembly_stats" of mapping
+           from String to mapping from String to Long, parameter
+           "contig_avg_doc" of mapping from String to list of Double,
+           parameter "assembly_avg_doc" of mapping from String to list of
+           Double
+        """
+        # ctx is the context object
+        # return variables are: returnVal
+        #BEGIN run_assembly_depth_of_coverage_with_bbmap
+
+        # very strange, re import from above isn't being retained in this scope
+        import re
+
+        #### Step 0: basic init
+        ##
+        console = []
+        invalid_msgs = []
+        report_text = ''
+        self.log(console, 'Running run_assembly_depth_of_coverage_with_bbmap(): ')
+        self.log(console, "\n"+pformat(params))
+
+        # Auth
+        token = ctx['token']
+        headers = {'Authorization': 'OAuth '+token}
+        env = os.environ.copy()
+        env['KB_AUTH_TOKEN'] = token
+
+        # API Clients
+        #SERVICE_VER = 'dev'  # DEBUG
+        SERVICE_VER = 'release'
+        # wsClient
+        try:
+            wsClient = Workspace(self.workspaceURL, token=token)
+        except Exception as e:
+            raise ValueError('Unable to instantiate wsClient with workspaceURL: '+ self.workspaceURL +' ERROR: ' + str(e))
+        # dfuClient
+        try:
+            dfuClient = DataFileUtil(self.callbackURL)
+        except Exception as e:
+            raise ValueError('Unable to instantiate dfuClient with callbackURL: '+ self.callbackURL +' ERROR: ' + str(e))
+        # gfuClient
+        try:
+            gfuClient = GenomeFileUtil(self.callbackURL)
+        except Exception as e:
+            raise ValueError('Unable to instantiate gfuClient with callbackURL: '+ self.callbackURL +' ERROR: ' + str(e))
+        # setAPI_Client
+        try:
+            #setAPI_Client = SetAPI (url=self.callbackURL, token=ctx['token'])  # for SDK local.  local doesn't work for SetAPI
+            setAPI_Client = SetAPI (url=self.serviceWizardURL, token=ctx['token'])  # for dynamic service
+        except Exception as e:
+            raise ValueError('Unable to instantiate setAPI_Client with serviceWizardURL: '+ self.serviceWizardURL +' ERROR: ' + str(e))
+        # auClient
+        try:
+            auClient = AssemblyUtil(self.callbackURL, token=ctx['token'], service_ver=SERVICE_VER)
+        except Exception as e:
+            raise ValueError('Unable to instantiate auClient with callbackURL: '+ self.callbackURL +' ERROR: ' + str(e))
+        # ruClient
+        try:
+            ruClient = ReadsUtils(self.callbackURL, token=ctx['token'], service_ver=SERVICE_VER)
+        except Exception as e:
+            raise ValueError('Unable to instantiate ruClient with callbackURL: '+ self.callbackURL +' ERROR: ' + str(e))
+
+        # param checks
+        required_params = [#'workspace_name',
+                           'input_assembly_refs',
+                           'input_reads_refs'
+                          ]
+        for arg in required_params:
+            if arg not in params or params[arg] == None or params[arg] == '':
+                raise ValueError ("Must define required param: '"+arg+"'")
+
+        # load provenance
+        provenance = [{}]
+        if 'provenance' in ctx:
+            provenance = ctx['provenance']
+        provenance[0]['input_ws_objects']=[]
+        provenance[0]['input_ws_objects'].extend(params['input_assembly_refs'])
+        provenance[0]['input_ws_objects'].extend(params['input_reads_refs'])
+
+        # set the output paths
+        timestamp = int((datetime.utcnow() - datetime.utcfromtimestamp(0)).total_seconds()*1000)
+        output_dir = os.path.join(self.scratch,'output.'+str(timestamp))
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+        html_output_dir = os.path.join(output_dir,'html')
+        if not os.path.exists(html_output_dir):
+            os.makedirs(html_output_dir)
+        runs_dir = os.path.join(output_dir,'runs')
+        if not os.path.exists(runs_dir):
+            os.makedirs(runs_dir)
+        reads_dir = os.path.join(output_dir,'reads')
+        if not os.path.exists(reads_dir):
+            os.makedirs(reads_dir)
+
+        # obj info fields
+        [OBJID_I, NAME_I, TYPE_I, SAVE_DATE_I, VERSION_I, SAVED_BY_I, WSID_I, WORKSPACE_I, CHSUM_I, SIZE_I, META_I] = range(11)  # object_info tuple
+            
+        # configure data types
+        assembly_obj_type = "KBaseGenomeAnnotations.Assembly"
+        assembly_set_obj_type = "KBaseSets.AssemblySet"
+        genome_obj_type = "KBaseGenomes.Genome"
+        genome_set_obj_type = "KBaseSearch.GenomeSet"
+        binned_contigs_obj_type = "KBaseMetagenomes.BinnedContigs"
+        ama_assembly_obj_type = "KBaseMetagenomes.AnnotatedMetagenomeAssembly"
+
+            
+        #### STEP 1: Get assemblies
+        ##
+        src_assembly_names = []
+        src_assembly_contig_files = []
+        src_assembly_refs = []
+        src_assembly_contig_ids = dict()
+        src_to_sub_names = dict()
+        genomeset_to_genome_names = dict()
+        
+        for src_ref in params['input_assembly_refs']:
+
+            src_name = None
+            src_type = None
+            contig_ids = None
+            contig_file_path = None
+
+            self.log (console, "Retrieving Object {} to score Depth of Coverage for Assemblies".format(src_ref))  # DEBUG
+
+            # assembly obj info
+            accepted_input_types = [assembly_obj_type,
+                                    assembly_set_obj_type,
+                                    genome_obj_type,
+                                    genome_set_obj_type,
+                                    binned_contigs_obj_type,
+                                    ama_assembly_obj_type]
+            try:
+                #input_obj_info = wsClient.get_object_info_new ({'objects':[{'ref':input_ref}]})[0]
+                src_obj = wsClient.get_objects2({'objects':[{'ref':src_ref}]})['data'][0]
+                src_obj_data = src_obj['data']
+                src_obj_info = src_obj['info']
+
+                src_type = re.sub ('-[0-9]+\.[0-9]+$', "", src_obj_info[TYPE_I])  # remove trailing version
+                src_name = src_obj_info[NAME_I]
+            except Exception as e:
+                raise ValueError('Unable to get object from workspace: (' + src_ref +'): ' + str(e))
+
+            if src_type not in accepted_input_types:
+                raise ValueError ("Input object of type '"+src_type+"' not accepted.  Must be one of "+", ".join(accepted_input_types))
+
+            #
+            # get assembly file as fasta depending on src_type
+            #
+            
+            # Assembly type
+            if src_type == assembly_obj_type:
+                self.log(console, "getting contigs for Assembly "+src_name)
+
+                # store contig ids
+                src_assembly_contig_ids[src_name] = []
+                for contig_key in sorted (src_obj_data['contigs'].keys()):
+                    src_assembly_contig_ids[src_name].append(src_obj_data['contigs'][contig_key]['contig_id'])
+
+                # download contigs
+                self.log(console, "downloading contigs file")
+                dl_contig_file = auClient.get_assembly_as_fasta({'ref':src_ref}).get('path')
+                sys.stdout.flush()
+                dl_contig_file_path = dfuClient.unpack_file({'file_path': dl_contig_file})['file_path']
+
+                # put it somewhere to run on later
+                run_dir = os.path.join(runs_dir,src_name)
+                if not os.path.exists(run_dir):
+                    os.makedirs(run_dir)
+                contig_file = src_name
+                if not dl_contig_file_path.endswith ('.fa'):
+                    contig_file += '.fa'
+                src_contig_file = os.path.join(run_dir, contig_file)
+                shutil.copy (dl_contig_file_path, src_contig_file)
+                os.remove (dl_contig_file_path)
+                
+                # store target list
+                src_assembly_names.append(src_name)
+                src_assembly_contig_files.append(src_contig_file)
+                src_assembly_refs.append(src_ref)
+                src_to_sub_names[src_name] = [src_name]
+                
+            # Assembly Set
+            elif src_type == assembly_set_obj_type:
+                self.log(console, "getting contigs for Assembly Set "+src_name)
+                try:
+                    set_obj = setAPI_Client.get_assembly_set_v1 ({'ref':src_ref, 'include_item_info':1})
+                except Exception as e:
+                    raise ValueError('Unable to get object '+src_name+' from workspace: (' + src_ref +')' + str(e))
+
+                src_to_sub_names[src_name] = []
+                for item_obj in set_obj['data']['items']:
+                    sub_ref = item_obj['ref']
+                    try:
+                        sub_obj = wsClient.get_objects2({'objects':[{'ref':sub_ref}]})['data'][0]
+                        sub_obj_data = sub_obj['data']
+                        sub_obj_info = sub_obj['info']
+                        sub_type = re.sub ('-[0-9]+\.[0-9]+$', "", sub_obj_info[TYPE_I])  # remove trailing version
+                        sub_name = sub_obj_info[NAME_I]
+                    except Exception as e:
+                        raise ValueError('Unable to get object from workspace: (' + sub_ref +'): ' + str(e))
+
+                    self.log(console, "getting contigs for Assembly "+sub_name+" from AssemblySet "+src_name)
+
+                    # store contig ids
+                    src_assembly_contig_ids[sub_name] = []
+                    for contig_key in sorted (sub_obj_data['contigs'].keys()):
+                        src_assembly_contig_ids[sub_name].append(sub_obj_data['contigs'][contig_key]['contig_id'])
+
+                    # download contigs
+                    self.log(console, "downloading contigs file")
+                    dl_contig_file = auClient.get_assembly_as_fasta({'ref':sub_ref}).get('path')
+                    sys.stdout.flush()
+                    dl_contig_file_path = dfuClient.unpack_file({'file_path': dl_contig_file})['file_path']
+
+                    # put it somewhere to run on later
+                    run_dir = os.path.join(runs_dir,sub_name)
+                    if not os.path.exists(run_dir):
+                        os.makedirs(run_dir)
+                    contig_file = sub_name
+                    if not dl_contig_file_path.endswith ('.fa'):
+                        contig_file += '.fa'
+                    sub_contig_file = os.path.join(run_dir, contig_file)
+                    shutil.copy (dl_contig_file_path, sub_contig_file)
+                    os.remove (dl_contig_file_path)
+                
+                    # store target list
+                    src_assembly_names.append(sub_name)
+                    src_assembly_contig_files.append(sub_contig_file)
+                    src_assembly_refs.append(sub_ref)
+                    src_to_sub_names[src_name].append(sub_name)
+                
+            # Genome
+            elif src_type == genome_obj_type:
+
+                if src_obj_data.get('assembly_ref'):
+                    sub_ref = src_obj_data['assembly_ref']
+                elif src_obj_data.get('contigset_ref'):
+                    sub_ref = src_obj_data['contigset_ref']
+                else:
+                    raise ValueError ("Genome obj {} is missing assembly_ref and contigset_ref".format(src_name))
+
+                try:
+                    sub_obj = wsClient.get_objects2({'objects':[{'ref':sub_ref}]})['data'][0]
+                    sub_obj_data = sub_obj['data']
+                    sub_obj_info = sub_obj['info']
+                    sub_type = re.sub ('-[0-9]+\.[0-9]+$', "", sub_obj_info[TYPE_I])  # remove trailing version
+                    sub_name = sub_obj_info[NAME_I]
+                except Exception as e:
+                    raise ValueError('Unable to get object from workspace: (' + sub_ref +'): ' + str(e))
+
+                self.log(console, "getting contigs for Assembly "+sub_name+" from Genome "+src_name)
+
+                # store contig ids
+                src_assembly_contig_ids[sub_name] = []
+                for contig_key in sorted (sub_obj_data['contigs'].keys()):
+                    src_assembly_contig_ids[sub_name].append(sub_obj_data['contigs'][contig_key]['contig_id'])
+
+                # download contigs
+                self.log(console, "downloading contigs file")
+                dl_contig_file = auClient.get_assembly_as_fasta({'ref':sub_ref}).get('path')
+                sys.stdout.flush()
+                dl_contig_file_path = dfuClient.unpack_file({'file_path': dl_contig_file})['file_path']
+
+                # put it somewhere to run on later
+                run_dir = os.path.join(runs_dir,sub_name)
+                if not os.path.exists(run_dir):
+                    os.makedirs(run_dir)
+                contig_file = sub_name
+                if not dl_contig_file_path.endswith ('.fa'):
+                    contig_file += '.fa'
+                sub_contig_file = os.path.join(run_dir, contig_file)
+                shutil.copy (dl_contig_file_path, sub_contig_file)
+                os.remove (dl_contig_file_path)
+                
+                # store target list
+                src_assembly_names.append(sub_name)
+                src_assembly_contig_files.append(sub_contig_file)
+                src_assembly_refs.append(sub_ref)
+                src_to_sub_names[src_name] = [sub_name]
+
+            # GenomeSet
+            elif src_type == genome_set_obj_type:
+                # use SetAPI when it sends back 'items' for KBaseSearch.GenomeSet
+                #try:
+                #    set_obj = setAPI_Client.get_genome_set_v1 ({'ref':input_ref, 'include_item_info':1})
+                #except Exception as e:
+                #    raise ValueError('Unable to get object '+input_obj_name+' from workspace: (' + input_ref +')' + str(e))
+                # for now use this mimic to get the same 'items' structure
+                set_obj_data = dict()
+                set_obj_data['items'] = []
+                for element_key in src_obj_data['elements'].keys():
+                    set_obj_data['items'].append(src_obj_data['elements'][element_key])
+
+                genomeset_to_genome_names[src_name] = []
+
+                for item_obj in set_obj_data['items']:
+                    genome_ref = item_obj['ref']
+                    try:
+                        genome_obj = wsClient.get_objects2({'objects':[{'ref':genome_ref}]})['data'][0]
+                        genome_obj_data = genome_obj['data']
+                        genome_obj_info = genome_obj['info']
+                        genome_name = genome_obj_info[NAME_I]
+                    except Exception as e:
+                        raise ValueError('Unable to get genome object {} ({})from workspace: ({}): '.format(genome_name, genome_ref, str(e)))
+                    genomeset_to_genome_names[src_name].append(genome_name)
+                    
+                    if genome_obj_data.get('assembly_ref'):
+                        sub_ref = genome_obj_data['assembly_ref']
+                    elif genome_obj_data.get('contigset_ref'):
+                        sub_ref = genome_obj_data['contigset_ref']
+                    else:
+                        raise ValueError ("Genome obj {} is missing assembly_ref and contigset_ref".format(genome_name))
+
+                    try:
+                        sub_obj = wsClient.get_objects2({'objects':[{'ref':sub_ref}]})['data'][0]
+                        sub_obj_data = sub_obj['data']
+                        sub_obj_info = sub_obj['info']
+                        sub_type = re.sub ('-[0-9]+\.[0-9]+$', "", sub_obj_info[TYPE_I])  # remove trailing version
+                        sub_name = sub_obj_info[NAME_I]
+                    except Exception as e:
+                        raise ValueError('Unable to get object from workspace: (' + sub_ref +'): ' + str(e))
+
+                    self.log(console, "getting contigs for Assembly "+sub_name+" from Genome "+genome_name+" from GenomeSet "+src_name)
+
+                    # store contig ids
+                    src_assembly_contig_ids[sub_name] = []
+                    for contig_key in sorted (sub_obj_data['contigs'].keys()):
+                        src_assembly_contig_ids[sub_name].append(sub_obj_data['contigs'][contig_key]['contig_id'])
+
+                    # download contigs
+                    self.log(console, "downloading contigs file")
+                    dl_contig_file = auClient.get_assembly_as_fasta({'ref':sub_ref}).get('path')
+                    sys.stdout.flush()
+                    dl_contig_file_path = dfuClient.unpack_file({'file_path': dl_contig_file})['file_path']
+
+                    # put it somewhere to run on later
+                    run_dir = os.path.join(runs_dir,sub_name)
+                    if not os.path.exists(run_dir):
+                        os.makedirs(run_dir)
+                    contig_file = sub_name
+                    if not dl_contig_file_path.endswith ('.fa'):
+                        contig_file += '.fa'
+                    sub_contig_file = os.path.join(run_dir, contig_file)
+                    shutil.copy (dl_contig_file_path, sub_contig_file)
+                    os.remove (dl_contig_file_path)
+                
+                    # store target list
+                    src_assembly_names.append(sub_name)
+                    src_assembly_contig_files.append(sub_contig_file)
+                    src_assembly_refs.append(sub_ref)
+                    src_to_sub_names[genome_name] = [sub_name]
+
+            # BinnedContigs
+            elif src_type == binned_contigs_obj_type:
+
+                if src_obj_data.get('assembly_ref'):
+                    sub_ref = src_obj_data['assembly_ref']
+                else:
+                    raise ValueError ("BinnedContig obj {} is missing assembly_ref".format(src_name))
+
+                try:
+                    sub_obj = wsClient.get_objects2({'objects':[{'ref':sub_ref}]})['data'][0]
+                    sub_obj_data = sub_obj['data']
+                    sub_obj_info = sub_obj['info']
+                    sub_type = re.sub ('-[0-9]+\.[0-9]+$', "", sub_obj_info[TYPE_I])  # remove trailing version
+                    sub_name = sub_obj_info[NAME_I]
+                except Exception as e:
+                    raise ValueError('Unable to get object from workspace: (' + sub_ref +'): ' + str(e))
+
+                self.log(console, "getting contigs for Assembly "+sub_name+" from Genome "+src_name)
+
+                # store contig ids
+                src_assembly_contig_ids[sub_name] = []
+                for contig_key in sorted (sub_obj_data['contigs'].keys()):
+                    src_assembly_contig_ids[sub_name].append(sub_obj_data['contigs'][contig_key]['contig_id'])
+                
+                # download contigs
+                self.log(console, "downloading contigs file")
+                dl_contig_file = auClient.get_assembly_as_fasta({'ref':sub_ref}).get('path')
+                sys.stdout.flush()
+                dl_contig_file_path = dfuClient.unpack_file({'file_path': dl_contig_file})['file_path']
+
+                # put it somewhere to run on later
+                run_dir = os.path.join(runs_dir,sub_name)
+                if not os.path.exists(run_dir):
+                    os.makedirs(run_dir)
+                contig_file = sub_name
+                if not dl_contig_file_path.endswith ('.fa'):
+                    contig_file += '.fa'
+                sub_contig_file = os.path.join(run_dir, contig_file)
+                shutil.copy (dl_contig_file_path, sub_contig_file)
+                os.remove (dl_contig_file_path)
+                
+                # store target list
+                src_assembly_names.append(sub_name)
+                src_assembly_contig_files.append(sub_contig_file)
+                src_assembly_refs.append(sub_ref)
+                src_to_sub_names[src_name] = [sub_name]
+
+            # AnnotatedMetagenomeAssembly type
+            elif src_type == ama_assembly_obj_type:
+
+                self.log(console, "getting contigs for AnnotatedMetagenomeAssembly "+src_name)
+
+                # store contig ids
+                src_assembly_contig_ids[src_name] = []
+                src_assembly_contig_ids[src_name].extend(src_obj_data['contig_ids'])
+
+                # download contigs
+                self.log(console, "downloading contigs file")
+                
+                if src_obj_data.get('assembly_ref'):
+                    sub_ref = src_obj_data['assembly_ref']
+                else:
+                    raise ValueError ("AnnotatedMetagenomeAssembly obj {} is missing assembly_ref".format(src_name))
+                    
+                try:
+                    sub_obj = wsClient.get_objects2({'objects':[{'ref':sub_ref}]})['data'][0]
+                    sub_obj_data = sub_obj['data']
+                    sub_obj_info = sub_obj['info']
+                    sub_type = re.sub ('-[0-9]+\.[0-9]+$', "", sub_obj_info[TYPE_I])  # remove trailing version
+                    sub_name = sub_obj_info[NAME_I]
+                except Exception as e:
+                    raise ValueError('Unable to get object from workspace: (' + sub_ref +'): ' + str(e))
+
+                dl_contig_file = auClient.get_assembly_as_fasta({'ref':sub_ref}).get('path')
+                sys.stdout.flush()
+                dl_contig_file_path = dfuClient.unpack_file({'file_path': dl_contig_file})['file_path']
+
+                # put it somewhere to run on later
+                run_dir = os.path.join(runs_dir,sub_name)
+                if not os.path.exists(run_dir):
+                    os.makedirs(run_dir)
+                contig_file = sub_name
+                if not dl_contig_file_path.endswith ('.fa'):
+                    contig_file += '.fa'
+                sub_contig_file = os.path.join(run_dir, contig_file)
+                shutil.copy (dl_contig_file_path, sub_contig_file)
+                os.remove (dl_contig_file_path)
+                
+                # store target list
+                src_assembly_names.append(sub_name)
+                src_assembly_contig_files.append(sub_contig_file)
+                src_assembly_refs.append(sub_ref)
+                src_to_sub_names[src_name] = [sub_name]
+
+            else:
+                raise ValueError ("unknown assembly input type: "+src_type)
+            
+
+        #### STEP 2: get reads libraries and run BBMap on them, then delete to free up disk
+        ##
+        for reads_ref in params['input_reads_refs']:
+            try:
+                reads_dl = ruClient.download_reads({'read_libraries': [reads_ref], 'interleaved': 'true'})
+            except:
+                raise ValueError ("unable to download reads ref "+reads_ref)
+
+            reads_dl_file = reads_dl['files'][reads_ref]['files']['fwd']
+
+            #
+            # HEART OF METHOD HERE
+            #
+            
+            # run BBMap on each assembly and parse covstats
+            #
+            for ass_i,ass_name in enumerate(src_assembly_names):
+                run_dir = os.path.join (runs_dir, ass_name)
+                os.chdir (run_dir)
+
+                contig_file = src_assembly_contig_files[ass_i]
+                covstats_file = os.path.join (run_dir, 'covstats.txt')
+                covhist_file = os.path.join (run_dir, 'covhist.txt')
+                bincov_file = os.path.join (run_dir, 'bincov.txt')
+                basecov_file = os.path.join (run_dir, 'basecov.txt')
+                
+                bbmap_cmd = [self.BBMAP_bin]
+                bbmap_cmd.append ('ref={}'.format(contig_file))
+                bbmap_cmd.append ('in={}'.format(reads_dl_file))
+                bbmap_cmd.append ('qin={}'.format(str(33)))
+                bbmap_cmd.append ('covstats={}'.format(covstats_file))
+                bbmap_cmd.append ('covhist={}'.format(covhist_file))
+                bbmap_cmd.append ('bincov={}'.format(bincov_file))
+                #bbmap_cmd.append ('basecov={}'.format(basecov_file))
+
+                # Run BBMap, capture output as it happens
+                #
+                self.log(console, 'RUNNING BBMap:')
+                self.log(console, '    '+' '.join(bbmap_cmd))
+                
+                p = subprocess.Popen(bbmap_cmd, \
+                                     cwd = run_dir, \
+                                     stdout = subprocess.PIPE, \
+                                     stderr = subprocess.STDOUT, \
+                                     shell = False)
+                
+                while True:
+                    line = p.stdout.readline().decode()
+                    if not line: break
+                    self.log(console, line.replace('\n', ''))
+
+                p.stdout.close()
+                p.wait()
+                self.log(console, 'return code: ' + str(p.returncode))
+                if p.returncode != 0:
+                    self.log(console,'Error running bbmap, return code: '+str(p.returncode) + '\n\n')
+                #'\n\n'+ '\n'.join(console))
+
+                with open ('covstats.txt', 'r') as covstats_h:
+                    for covstats_line in covstats_h:
+                        covstats_line = covstats_line.rstrip()
+                        self.log (console, covstats_line)
+                    
+            # free up space
+            os.remove(reads_dl_file)
+
+            
+        # DEBUG
+        self.log(console,"HELLO KITTY")
+
+        output_data = {'report_name': 'foo.bar',
+                       'report_ref': '1/2/3'
+                       }
+        returnVal = output_data
+
+        #END run_assembly_depth_of_coverage_with_bbmap
+
+        # At some point might do deeper type checking...
+        if not isinstance(returnVal, dict):
+            raise ValueError('Method run_assembly_depth_of_coverage_with_bbmap return value ' +
                              'returnVal is not type dict as required.')
         # return the results
         return [returnVal]

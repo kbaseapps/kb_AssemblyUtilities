@@ -3,8 +3,10 @@ import os
 import time
 import unittest
 import json
+import re
 import requests
 import shutil
+import gzip
 from pprint import pprint  # noqa: F401
 from configparser import ConfigParser
 
@@ -14,6 +16,7 @@ from kb_AssemblyUtilities.authclient import KBaseAuth as _KBaseAuth
 
 from installed_clients.WorkspaceClient import Workspace
 from installed_clients.AssemblyUtilClient import AssemblyUtil
+from installed_clients.ReadsUtilsClient import ReadsUtils
 from installed_clients.GenomeFileUtilClient import GenomeFileUtil
 from installed_clients.MetagenomeUtilsClient import MetagenomeUtils
 from installed_clients.SetAPIServiceClient import SetAPI
@@ -81,7 +84,101 @@ class kb_AssemblyUtilitiesTest(unittest.TestCase):
     def getContext(self):
         return self.__class__.ctx
 
-            
+    # get UPA
+    def getUPAfromInfo (self, obj_info):
+        return "/".join([str(obj_info[WSID_I]),
+                         str(obj_info[OBJID_I]),
+                         str(obj_info[VERSION_I])])
+    
+    # call this method to get the WS object info of a Paired End Library (will
+    # upload the example data if this is the first time the method is called during tests)
+    def getPairedEndLibInfo(self, read_lib_file):
+        read_lib_basename = os.path.basename(read_lib_file)
+        if hasattr(self.__class__, 'pairedEndLibInfo_dict'):
+            try:
+                info = self.__class__.pairedEndLibInfo_dict[read_lib_basename]
+                if info is not None:
+                    return info
+            except:
+                pass
+
+        # 1) upload files to shock
+        ru_params = dict()
+        shared_dir = "/kb/module/work/tmp"
+        interleaved = 1
+        forward_data_file = 'data/'+read_lib_file
+        if not os.path.exists(forward_data_file+'.gz'):
+            forward_data_file = 'data/'+read_lib_file+'.inter.fastq'
+            if not os.path.exists(forward_data_file+'.gz'):
+                forward_data_file = 'data/'+read_lib_file+'.fwd.fastq'
+                if not os.path.exists(forward_data_file+'.gz'):
+                    raise ValueError ("unable to find reads lib "+read_lib_file)
+        forward_file = os.path.join(shared_dir, os.path.basename(forward_data_file))
+        with gzip.open(forward_data_file+'.gz', 'rb') as f_in:
+            with open(forward_file, 'wb') as f_out:
+                shutil.copyfileobj(f_in, f_out)
+        ru_params['fwd_file'] = forward_file
+        reverse_data_file = forward_data_file.replace('.fwd.fastq','')
+        if os.path.exists(reverse_data_file+'.gz'):
+            interleaved = 0
+            reverse_file = os.path.join(shared_dir, os.path.basename(reverse_data_file))
+            with gzip.open(reverse_data_file+'.gz', 'rb') as f_in:
+                with open(reverse_file, 'wb') as f_out:
+                    shutil.copyfileobj(f_in, f_out)
+            ru_params['rev_file'] = reverse_file
+        ru_params['sequencing_tech'] = 'artificial reads'
+        ru_params['interleaved'] = interleaved
+        ru_params['wsname'] = self.getWsName()
+        ru_params['name'] = 'test-'+read_lib_basename+'.pe.reads'
+
+        ru = ReadsUtils(os.environ['SDK_CALLBACK_URL'])
+        paired_end_ref = ru.upload_reads(ru_params)['obj_ref']
+        new_obj_info = self.getWsClient().get_object_info_new({'objects': [{'ref': paired_end_ref}]})[0]
+
+        # store it
+        if not hasattr(self.__class__, 'pairedEndLibInfo_dict'):
+            self.__class__.pairedEndLibInfo_dict = dict()
+        self.__class__.pairedEndLibInfo_dict[read_lib_basename] = new_obj_info
+        return new_obj_info
+
+    
+    # call this method to get the WS object info of an Assembly
+    #   (will upload the example data if this is the first time the method is called during tests)
+    def getAssemblyInfo(self, assembly_file):
+        if hasattr(self.__class__, 'assemblyInfo_dict'):
+            try:
+                info = self.__class__.assemblyInfo_dict[assembly_file]
+                if info is not None:
+                    return info
+            except:
+                pass
+
+        # 1) upload assembly to ws
+        shared_dir = "/kb/module/work/tmp"
+        assembly_basename = os.path.basename(assembly_file)
+        dst_assembly_file = os.path.join(shared_dir, assembly_basename)
+        shutil.copy(assembly_file, dst_assembly_file)
+
+        try:
+            auClient = AssemblyUtil(os.environ['SDK_CALLBACK_URL'])
+        except Exception as e:
+            raise ValueError('Unable to instantiate auClient with callbackURL: '+ os.environ['SDK_CALLBACK_URL'] +' ERROR: ' + str(e))
+
+        print ("UPLOADING assembly: "+assembly_basename+" to WORKSPACE "+self.getWsName()+" ...")
+        ass_ref = auClient.save_assembly_from_fasta({
+            'file': {'path': dst_assembly_file},
+            'workspace_name': self.getWsName(),
+            'assembly_name': assembly_basename+'.'+'Assembly'
+        })
+        new_obj_info = self.getWsClient().get_object_info_new({'objects': [{'ref': ass_ref}]})[0]
+
+        # 2) store it
+        if not hasattr(self.__class__, 'assemblyInfo_dict'):
+            self.__class__.assemblyInfo_dict = dict()
+        self.__class__.assemblyInfo_dict[assembly_file] = new_obj_info
+        return new_obj_info
+
+    
     ##############
     # UNIT TESTS #
     ##############
@@ -684,6 +781,36 @@ class kb_AssemblyUtilitiesTest(unittest.TestCase):
             'output_name': 'test_fractionated'+'-'+base_1+'.'+type_1+'-'+'binned_contigs_2a2b'+'-'+fractionate_mode
         }
         result = self.getImpl().run_fractionate_contigs(self.getContext(),params)
+        print('RESULT:')
+        pprint(result)
+        pass
+
+
+    #### test_run_assembly_depth_of_coverage_with_bbmap_ASSEMBLY_01()
+    ##
+    # HIDE @unittest.skip("skipped test_run_assembly_depth_of_coverage_with_bbmap_ASSEMBLY_01()")  # uncomment to skip
+    def test_run_assembly_depth_of_coverage_with_bbmap_ASSEMBLY_01 (self):
+        method = 'run_assembly_depth_of_coverage_with_bbmap_ASSEMBLY_01'
+
+        msg = "RUNNING: "+method+"()"
+        print ("\n\n"+msg)
+        print ("="*len(msg)+"\n\n")
+
+        # upload test read data
+        pe_lib_ref_0 = self.getUPAfromInfo(self.getPairedEndLibInfo('readmap/seven_species_nonuniform_100K'))
+        pe_lib_ref_1 = self.getUPAfromInfo(self.getPairedEndLibInfo('readmap/seven_species_nonuniform_500K'))
+
+        # upload test assembly data
+        ass_ref_0 = self.getUPAfromInfo(self.getAssemblyInfo('data/readmap/Cren_trim.SPAdes.contigs.fa.gz'))
+        ass_ref_1 = self.getUPAfromInfo(self.getAssemblyInfo('data/readmap/Thermodesulfo_trim.SPAdes.contigs.fa.gz'))
+        # run method
+        base_output_name = method+'_output'
+        params = {
+            'workspace_name': self.getWsName(),
+            'input_assembly_refs': [ass_ref_0, ass_ref_1],
+            'input_reads_refs':    [pe_lib_ref_0, pe_lib_ref_1]
+        }
+        result = self.getImpl().run_assembly_depth_of_coverage_with_bbmap(self.getContext(),params)
         print('RESULT:')
         pprint(result)
         pass

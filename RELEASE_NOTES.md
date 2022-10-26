@@ -1,6 +1,10 @@
 # kb_AssemblyUtilities release notes
 =========================================
 
+1.3.0
+-----
+* Added Assembly Depth of Coverage with BBMap App
+
 1.2.0
 -----
 * Fixed bug in Filter Contigs by Length App
