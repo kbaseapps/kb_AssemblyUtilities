@@ -12,7 +12,7 @@
     },
     "parameters": [ 
         {
-            "id": "input_assembly_ref",
+            "id": "input_assembly_refs",
             "optional": false,
             "advanced": false,
             "allow_multiple": true,
@@ -34,14 +34,14 @@
                 "valid_ws_types": [ "KBaseFile.PairedEndLibrary" ],
 		"is_output_name": false
             }
-        },
+        }
     ],
 
     "behavior": {
         "service-mapping": {
             "url": "",
             "name": "kb_AssemblyUtilities",
-            "method": "run_fractionate_contigs",
+            "method": "run_assembly_depth_of_coverage_with_bbmap",
             "input_mapping": [
                 {
                     "narrative_system_variable": "workspace",
